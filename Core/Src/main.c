@@ -22,6 +22,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include "SSD1331.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -54,119 +56,6 @@ static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
-
-static void SSD1331_Reset_Low() {
-	HAL_GPIO_WritePin(RES_GPIO_Port, RES_Pin, GPIO_PIN_RESET);
-}
-
-static void SSD1331_Reset_High() {
-	HAL_GPIO_WritePin(RES_GPIO_Port, RES_Pin, GPIO_PIN_SET);
-}
-
-static void SSD1331_Select() {
-	HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_RESET);
-}
-
-static void SSD1331_Deselect() {
-	HAL_GPIO_WritePin(CS_GPIO_Port, CS_Pin, GPIO_PIN_SET);
-}
-
-static void SSD1331_Send_Command(uint8_t data) {
-	HAL_GPIO_WritePin(DC_GPIO_Port, DC_Pin, GPIO_PIN_RESET);
-	SSD1331_Select();
-
-	HAL_SPI_Transmit(&hspi1, &data, 1, HAL_MAX_DELAY);
-
-	SSD1331_Deselect();
-
-}
-
-static void SSD1331_Send_Data(uint8_t* data, uint16_t len) {
-	HAL_GPIO_WritePin(DC_GPIO_Port, DC_Pin, GPIO_PIN_SET);
-
-	SSD1331_Select();
-
-	HAL_SPI_Transmit(&hspi1, data, len, HAL_MAX_DELAY);
-
-	SSD1331_Deselect();
-}
-
-static void SSD1331_Set_Contrast_A(uint8_t value) {
-	SSD1331_Send_Command(0x81); SSD1331_Send_Command(value);
-}
-
-static void SSD1331_Set_Contrast_B(uint8_t value) {
-	SSD1331_Send_Command(0x82); SSD1331_Send_Command(value);
-}
-
-static void SSD1331_Set_Contrast_C(uint8_t value) {
-	SSD1331_Send_Command(0x83); SSD1331_Send_Command(value);
-}
-
-static void SSD1331_Initialize() {
-	SSD1331_Reset_Low();
-	HAL_Delay(10);
-
-	SSD1331_Reset_High();
-	HAL_Delay(50);
-
-	// Initialization sequence
-	SSD1331_Send_Command(0xAE);              // Display off
-	SSD1331_Send_Command(0xA0); SSD1331_Send_Command(0x72); // Set Remap & Color Depth
-	SSD1331_Send_Command(0xA1); SSD1331_Send_Command(0x00); // Set Display Start Line
-	SSD1331_Send_Command(0xA2); SSD1331_Send_Command(0x00); // Set Display Offset
-	SSD1331_Send_Command(0xA4);              // Normal Display (not all-on)
-	SSD1331_Send_Command(0xA8); SSD1331_Send_Command(0x3F); // Set Multiplex Ratio
-	SSD1331_Send_Command(0xAD); SSD1331_Send_Command(0x8E); // Master Config
-	SSD1331_Send_Command(0xB0); SSD1331_Send_Command(0x0B); // Power Save Mode
-	SSD1331_Send_Command(0xB1); SSD1331_Send_Command(0x31); // Phase Period Adjust
-	SSD1331_Send_Command(0xB3); SSD1331_Send_Command(0xF0); // Clock Divider / Oscillator
-	SSD1331_Send_Command(0x8A); SSD1331_Send_Command(0x64); // Precharge A
-	SSD1331_Send_Command(0x8B); SSD1331_Send_Command(0x78); // Precharge B
-	SSD1331_Send_Command(0x8C); SSD1331_Send_Command(0x64); // Precharge C
-	SSD1331_Send_Command(0xBB); SSD1331_Send_Command(0x3A); // Precharge Level
-	SSD1331_Send_Command(0xBE); SSD1331_Send_Command(0x3E); // VCOMH
-	SSD1331_Send_Command(0x87); SSD1331_Send_Command(0x06); // Master Current
-	SSD1331_Set_Contrast_A(0x91);
-	SSD1331_Set_Contrast_B(0x50);
-	SSD1331_Set_Contrast_C(0x7D);
-	SSD1331_Send_Command(0xAF);              // Display ON
-}
-
-static void SSD1331_Draw_Pixel(uint8_t x, uint8_t y, uint16_t color) {
-	// set column
-	SSD1331_Send_Command(0x15);
-	SSD1331_Send_Command(x);
-	SSD1331_Send_Command(x);
-
-	// set row
-	SSD1331_Send_Command(0x75);
-	SSD1331_Send_Command(y);
-	SSD1331_Send_Command(y);
-
-	// send pixel color (in RGB565 format)
-	uint8_t data[2] = {
-	    color >> 8,
-		color & 0xFF
-	};
-
-	SSD1331_Send_Data(data, 2);
-}
-
-static void SSD1331_Draw_Whole_Image(uint8_t* data) {
-	for (size_t w = 0; w < SSD1331_WIDTH; w++) {
-		 for (size_t h = 0; h < SSD1331_HEIGHT; h++){
-			size_t index = w * SSD1331_WIDTH + h;
-
-			uint8_t pixel_low_byte = *(data + (index * 2));
-			uint8_t pixel_high_byte = *(data + (index * 2 + 1));
-
-			uint16_t pixel = ((uint16_t)pixel_high_byte << 8) + (uint16_t)pixel_low_byte;
-
-			SSD1331_Draw_Pixel(w, h, pixel);
-		}
-	}
-}
 
 /* USER CODE END PFP */
 
