@@ -81,6 +81,8 @@ void Error_Handler(void);
 #define CS_DISPLAY_GPIO_Port GPIOB
 #define DC_DISPLAY_Pin GPIO_PIN_5
 #define DC_DISPLAY_GPIO_Port GPIOB
+#define LED_CAMERA_Pin GPIO_PIN_8
+#define LED_CAMERA_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

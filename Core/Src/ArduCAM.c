@@ -8,6 +8,7 @@
 
 #include "ArduCAM.h"
 #include "sccb_bus.h"
+#include "spi.h"
 #include "ov2640_regs.h"
 #include "ov5640_regs.h"
 #include "ov5642_regs.h"
@@ -109,29 +110,23 @@ CS_HIGH();
 //Ö¸Ê¾µÆ³õÊ¼»¯
 void ArduCAM_LED_init(void)
 {
-  GPIO_InitTypeDef GPIO_InitStructure;
-  RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOE, ENABLE);
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_InitStructure.GPIO_Pin =  LED_PIN;
-	GPIO_Init(LED_PORT, &GPIO_InitStructure);
 //***********************************************
 	//   debug pin
-  GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_2;
-	GPIO_Init(GPIOE, &GPIO_InitStructure);
-	GPIO_SetBits(GPIOE,GPIO_Pin_2);
+//  GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_2;
+//	GPIO_Init(GPIOE, &GPIO_InitStructure);
+//	GPIO_SetBits(GPIOE,GPIO_Pin_2);
 //************************************************/
 }
 
 //Control the CS pin
 void CS_HIGH(void)
 {
- 	GPIO_SetBits(CS_PORT,CS_PIN);
+ 	HAL_GPIO_WritePin(GPIOA, CS_CAMERA_Pin, GPIO_PIN_SET);
 }
 
 void CS_LOW(void)
 {
- 	GPIO_ResetBits(CS_PORT,CS_PIN);
+ 	HAL_GPIO_WritePin(GPIOA, CS_CAMERA_Pin, GPIO_PIN_RESET);
 }
 
 void set_format(byte fmt)
@@ -144,10 +139,10 @@ void set_format(byte fmt)
 
 uint8_t bus_read(int address)
 {
-	uint8_t value;
-   CS_LOW();
-	 SPI1_ReadWriteByte(address);
-	 value = SPI1_ReadWriteByte(0x00);
+	 uint8_t value;
+	 CS_LOW();
+	 SPI_CAMERA_ReadWriteByte(address);
+	 value = SPI_CAMERA_ReadWriteByte(0x00);
 	 CS_HIGH();
 	 return value;
 }
@@ -155,8 +150,8 @@ uint8_t bus_read(int address)
 uint8_t bus_write(int address,int value)
 {
 	CS_LOW();delay_us(10);
-	SPI1_ReadWriteByte(address);
-	SPI1_ReadWriteByte(value);
+	SPI_CAMERA_ReadWriteByte(address);
+	SPI_CAMERA_ReadWriteByte(value);
 	delay_us(10);
 	CS_HIGH();
 	return 1;
@@ -181,7 +176,7 @@ uint8_t read_fifo(void)
 }
 void set_fifo_burst()
 {
-	SPI1_ReadWriteByte(BURST_FIFO_READ);
+	SPI_CAMERA_ReadWriteByte(BURST_FIFO_READ);
 }
 
 
@@ -479,8 +474,8 @@ int wrSensorRegs16_8(const struct sensor_reg reglist[])
 {
   int err = 0;
 
-  unsigned int reg_addr;
-  unsigned char reg_val;
+  unsigned int reg_addr = 0;
+  unsigned char reg_val = 0;
   const struct sensor_reg *next = reglist;
 
   while ((reg_addr != 0xffff) | (reg_val != 0xff))

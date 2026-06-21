@@ -22,6 +22,11 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include "ArduCAM.h"
+#include "spi.h"
+#include "delay.h"
+#include "sccb_bus.h"
+
 #include "SSD1331.h"
 
 /* USER CODE END Includes */
@@ -44,16 +49,24 @@
 /* Private variables ---------------------------------------------------------*/
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
+DMA_HandleTypeDef hdma_spi2_rx;
 
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+
+SPI_HandleTypeDef* camera_spi = &hspi2;
+
+#define BUFFER_SIZE_120_160 19200
+
+uint8_t image_buffer[BUFFER_SIZE_120_160] = {0};
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_SPI2_Init(void);
@@ -63,6 +76,16 @@ static void MX_SPI2_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+extern uint8_t* picbuf;
+
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef * hspi)
+{
+	if (hspi != camera_spi) return;
+
+	SSD1331_Draw_Whole_Image(&hspi1, image_buffer);
+    // RX Done .. Do Something ...
+}
 
 /* USER CODE END 0 */
 
@@ -74,6 +97,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+
 
   /* USER CODE END 1 */
 
@@ -95,10 +119,42 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_USART2_UART_Init();
   MX_SPI1_Init();
   MX_SPI2_Init();
   /* USER CODE BEGIN 2 */
+
+	uint8_t vid, pid, temp ;
+	uint8_t Camera_WorkMode = 0;
+	uint8_t start_shoot = 0;
+	uint8_t stop = 0;
+	SystemInit();
+	delay_init();
+	ArduCAM_LED_init();
+	ArduCAM_CS_init();
+	sccb_bus_init();
+
+	SSD1331_Initialize(&hspi1);
+
+	while(1)
+	{
+		write_reg(ARDUCHIP_TEST1, 0x55);
+		temp = read_reg(ARDUCHIP_TEST1);
+		if (temp != 0x55)
+		{
+//			printf("ACK CMD SPI interface Error!\n");
+			delay_ms(1000);
+			continue;
+		}
+		else
+		{
+//			printf("ACK CMD SPI interface OK!\r\n");
+			break;
+		}
+	}
+
+	ArduCAM_Init(OV2640);
 
   /* USER CODE END 2 */
 
@@ -107,6 +163,15 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+
+	OV2640_set_JPEG_size(OV2640_160x120);
+
+	SingleCapTransfer(image_buffer, BUFFER_SIZE_120_160);
+
+	delay_ms(1000);
+
+
+//	HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
 
     /* USER CODE BEGIN 3 */
   }
@@ -270,6 +335,22 @@ static void MX_USART2_UART_Init(void)
 }
 
 /**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Channel1_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -288,7 +369,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, RES_DISPLAY_Pin|DC_DISPLAY_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, RES_DISPLAY_Pin|DC_DISPLAY_Pin|LED_CAMERA_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
@@ -299,8 +380,8 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(CS_DISPLAY_GPIO_Port, CS_DISPLAY_Pin, GPIO_PIN_SET);
 
-  /*Configure GPIO pins : RES_DISPLAY_Pin CS_DISPLAY_Pin DC_DISPLAY_Pin */
-  GPIO_InitStruct.Pin = RES_DISPLAY_Pin|CS_DISPLAY_Pin|DC_DISPLAY_Pin;
+  /*Configure GPIO pins : RES_DISPLAY_Pin CS_DISPLAY_Pin DC_DISPLAY_Pin LED_CAMERA_Pin */
+  GPIO_InitStruct.Pin = RES_DISPLAY_Pin|CS_DISPLAY_Pin|DC_DISPLAY_Pin|LED_CAMERA_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
