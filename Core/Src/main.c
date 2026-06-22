@@ -22,6 +22,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include <stdio.h>
+
 #include "ArduCAM.h"
 #include "spi.h"
 #include "delay.h"
@@ -55,11 +57,18 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 
+int _write(int file, char *ptr, int len)
+{
+    HAL_UART_Transmit(&huart2, (uint8_t *)ptr, len, HAL_MAX_DELAY);
+    return len;
+}
+
 SPI_HandleTypeDef* camera_spi = &hspi2;
 
 #define BUFFER_SIZE_120_160 19200
+#define BUFFER_SMALL 4096
 
-uint8_t image_buffer[BUFFER_SIZE_120_160] = {0};
+uint8_t image_buffer[BUFFER_SMALL] = {0};
 
 /* USER CODE END PV */
 
@@ -126,9 +135,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
 	uint8_t vid, pid, temp ;
-	uint8_t Camera_WorkMode = 0;
-	uint8_t start_shoot = 0;
-	uint8_t stop = 0;
+
 	SystemInit();
 	delay_init();
 	ArduCAM_LED_init();
@@ -143,18 +150,61 @@ int main(void)
 		temp = read_reg(ARDUCHIP_TEST1);
 		if (temp != 0x55)
 		{
-//			printf("ACK CMD SPI interface Error!\n");
 			delay_ms(1000);
+
+			printf("ACK CMD SPI interface Error!r\n");
+
 			continue;
 		}
 		else
 		{
-//			printf("ACK CMD SPI interface OK!\r\n");
 			break;
+			printf("ACK CMD SPI interface OK!\r\n");
 		}
 	}
 
-	ArduCAM_Init(OV2640);
+	 while(1)
+		{
+			sensor_addr = 0x60;
+			wrSensorReg8_8(0xff, 0x01);
+			rdSensorReg8_8(OV2640_CHIPID_HIGH, &vid);
+			rdSensorReg8_8(OV2640_CHIPID_LOW, &pid);
+			if ((vid != 0x26 ) && (( pid != 0x41 ) || ( pid != 0x42 )))
+				printf("ACK CMD Can't find OV2640 module!\r\n");
+			else
+			{
+			  sensor_model =  OV2640 ;
+			  printf("ACK CMD OV2640 detected.\r\n");
+			  break;
+			}
+			sensor_addr = 0x78;
+			rdSensorReg16_8(OV5640_CHIPID_HIGH, &vid);
+			rdSensorReg16_8(OV5640_CHIPID_LOW, &pid);
+			if ((vid != 0x56) || (pid != 0x40))
+				printf("ACK CMD Can't find OV5640 module!\r\n");
+			else
+			{
+				sensor_model =  OV5640 ;
+				printf("ACK CMD OV5640 detected.\r\n");
+			  break;
+			}
+			sensor_addr = 0x78;
+			rdSensorReg16_8(OV5642_CHIPID_HIGH, &vid);
+			rdSensorReg16_8(OV5642_CHIPID_LOW, &pid);
+			if ((vid != 0x56) || (pid != 0x42))
+			{
+				printf("ACK CMD Can't find OV5642 module!\r\n");
+				continue;
+			}
+			else
+			{
+			 sensor_model =  OV5642 ;
+			 printf("ACK CMD OV5642 detected.\r\n");
+			 break;
+			}
+		}
+
+//	ArduCAM_Init(sensor_model);
 
   /* USER CODE END 2 */
 
@@ -164,11 +214,15 @@ int main(void)
   {
     /* USER CODE END WHILE */
 
-	OV2640_set_JPEG_size(OV2640_160x120);
+//	OV2640_set_JPEG_size(OV2640_160x120);
+//
+//	SingleCapTransfer(image_buffer, BUFFER_SMALL);
 
-	SingleCapTransfer(image_buffer, BUFFER_SIZE_120_160);
+	HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
 
 	delay_ms(1000);
+
+	printf("test 123\r\n");
 
 
 //	HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);

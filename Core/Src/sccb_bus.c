@@ -25,8 +25,8 @@ void SCCB_DATA_IN()
 
   GPIO_InitStruct.Pin = SIO_D_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 }
 
@@ -37,7 +37,7 @@ void SCCB_DATA_OUT()
   GPIO_InitStruct.Pin = SIO_D_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 }
 
@@ -52,6 +52,9 @@ void sccb_bus_init(void)
 
 {
 	SCCB_DATA_OUT();
+
+    SCCB_SID_H();
+    SCCB_SIC_H();
 }
 
 
