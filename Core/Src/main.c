@@ -53,6 +53,8 @@ SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
 DMA_HandleTypeDef hdma_spi2_rx;
 
+TIM_HandleTypeDef htim1;
+
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
@@ -79,6 +81,7 @@ static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_SPI2_Init(void);
+static void MX_TIM1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -132,9 +135,12 @@ int main(void)
   MX_USART2_UART_Init();
   MX_SPI1_Init();
   MX_SPI2_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 
 	uint8_t vid, pid, temp ;
+
+	HAL_TIM_Base_Start(&htim1);  // start the Timer1
 
 	SystemInit();
 	delay_init();
@@ -170,7 +176,7 @@ int main(void)
 			rdSensorReg8_8(OV2640_CHIPID_HIGH, &vid);
 			rdSensorReg8_8(OV2640_CHIPID_LOW, &pid);
 			if ((vid != 0x26 ) && (( pid != 0x41 ) || ( pid != 0x42 )))
-				printf("ACK CMD Can't find OV2640 module!\r\n");
+				printf("ACK CMD Can't find OV2640 module! got vid: %#x, pid: %#x\r\n", vid, pid);
 			else
 			{
 			  sensor_model =  OV2640 ;
@@ -181,7 +187,7 @@ int main(void)
 			rdSensorReg16_8(OV5640_CHIPID_HIGH, &vid);
 			rdSensorReg16_8(OV5640_CHIPID_LOW, &pid);
 			if ((vid != 0x56) || (pid != 0x40))
-				printf("ACK CMD Can't find OV5640 module!\r\n");
+				printf("ACK CMD Can't find OV5640 module! got vid: %#x, pid: %#x\r\n", vid, pid);
 			else
 			{
 				sensor_model =  OV5640 ;
@@ -193,7 +199,7 @@ int main(void)
 			rdSensorReg16_8(OV5642_CHIPID_LOW, &pid);
 			if ((vid != 0x56) || (pid != 0x42))
 			{
-				printf("ACK CMD Can't find OV5642 module!\r\n");
+				printf("ACK CMD Can't find OV5642 module! got vid: %#x, pid: %#x\r\n", vid, pid);
 				continue;
 			}
 			else
@@ -202,7 +208,7 @@ int main(void)
 			 printf("ACK CMD OV5642 detected.\r\n");
 			 break;
 			}
-		}
+		};
 
 //	ArduCAM_Init(sensor_model);
 
@@ -212,8 +218,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* USER CODE END WHILE */
-
 //	OV2640_set_JPEG_size(OV2640_160x120);
 //
 //	SingleCapTransfer(image_buffer, BUFFER_SMALL);
@@ -226,6 +230,8 @@ int main(void)
 
 
 //	HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
+
+    /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
   }
@@ -353,6 +359,53 @@ static void MX_SPI2_Init(void)
 }
 
 /**
+  * @brief TIM1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM1_Init(void)
+{
+
+  /* USER CODE BEGIN TIM1_Init 0 */
+
+  /* USER CODE END TIM1_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM1_Init 1 */
+
+  /* USER CODE END TIM1_Init 1 */
+  htim1.Instance = TIM1;
+  htim1.Init.Prescaler = 15;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.Period = 65535;
+  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim1.Init.RepetitionCounter = 0;
+  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterOutputTrigger2 = TIM_TRGO2_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM1_Init 2 */
+
+  /* USER CODE END TIM1_Init 2 */
+
+}
+
+/**
   * @brief USART2 Initialization Function
   * @param None
   * @retval None
@@ -369,7 +422,7 @@ static void MX_USART2_UART_Init(void)
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
   huart2.Init.BaudRate = 115200;
-  huart2.Init.WordLength = UART_WORDLENGTH_7B;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
   huart2.Init.Mode = UART_MODE_TX_RX;
