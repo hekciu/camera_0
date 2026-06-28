@@ -142,7 +142,7 @@ int main(void)
 
 	HAL_TIM_Base_Start(&htim1);  // start the Timer1
 
-	SystemInit();
+//	SystemInit();
 	delay_init();
 	ArduCAM_LED_init();
 	ArduCAM_CS_init();
@@ -170,45 +170,48 @@ int main(void)
 	}
 
 	 while(1)
+	{
+		sensor_addr = 0x60;
+		wrSensorReg8_8(0xff, 0x01);
+		rdSensorReg8_8(OV2640_CHIPID_HIGH, &vid);
+		rdSensorReg8_8(OV2640_CHIPID_LOW, &pid);
+		if ((vid != 0x26 ) && (( pid != 0x41 ) || ( pid != 0x42 )))
+			printf("ACK CMD Can't find OV2640 module! got vid: %#x, pid: %#x\r\n", vid, pid);
+		else
 		{
-			sensor_addr = 0x60;
-			wrSensorReg8_8(0xff, 0x01);
-			rdSensorReg8_8(OV2640_CHIPID_HIGH, &vid);
-			rdSensorReg8_8(OV2640_CHIPID_LOW, &pid);
-			if ((vid != 0x26 ) && (( pid != 0x41 ) || ( pid != 0x42 )))
-				printf("ACK CMD Can't find OV2640 module! got vid: %#x, pid: %#x\r\n", vid, pid);
-			else
-			{
-			  sensor_model =  OV2640 ;
-			  printf("ACK CMD OV2640 detected.\r\n");
-			  break;
-			}
-			sensor_addr = 0x78;
-			rdSensorReg16_8(OV5640_CHIPID_HIGH, &vid);
-			rdSensorReg16_8(OV5640_CHIPID_LOW, &pid);
-			if ((vid != 0x56) || (pid != 0x40))
-				printf("ACK CMD Can't find OV5640 module! got vid: %#x, pid: %#x\r\n", vid, pid);
-			else
-			{
-				sensor_model =  OV5640 ;
-				printf("ACK CMD OV5640 detected.\r\n");
-			  break;
-			}
-			sensor_addr = 0x78;
-			rdSensorReg16_8(OV5642_CHIPID_HIGH, &vid);
-			rdSensorReg16_8(OV5642_CHIPID_LOW, &pid);
-			if ((vid != 0x56) || (pid != 0x42))
-			{
-				printf("ACK CMD Can't find OV5642 module! got vid: %#x, pid: %#x\r\n", vid, pid);
-				continue;
-			}
-			else
-			{
-			 sensor_model =  OV5642 ;
-			 printf("ACK CMD OV5642 detected.\r\n");
-			 break;
-			}
-		};
+		  sensor_model =  OV2640 ;
+		  printf("ACK CMD OV2640 detected.\r\n");
+		  break;
+		}
+		sensor_addr = 0x78;
+		rdSensorReg16_8(OV5640_CHIPID_HIGH, &vid);
+		rdSensorReg16_8(OV5640_CHIPID_LOW, &pid);
+		if ((vid != 0x56) || (pid != 0x40))
+			printf("ACK CMD Can't find OV5640 module! got vid: %#x, pid: %#x\r\n", vid, pid);
+		else
+		{
+			sensor_model =  OV5640 ;
+			printf("ACK CMD OV5640 detected.\r\n");
+		  break;
+		}
+		sensor_addr = 0x78;
+		rdSensorReg16_8(OV5642_CHIPID_HIGH, &vid);
+		rdSensorReg16_8(OV5642_CHIPID_LOW, &pid);
+		if ((vid != 0x56) || (pid != 0x42))
+		{
+			printf("ACK CMD Can't find OV5642 module! got vid: %#x, pid: %#x\r\n", vid, pid);
+		}
+		else
+		{
+		 sensor_model =  OV5642 ;
+		 printf("ACK CMD OV5642 detected.\r\n");
+		 break;
+		}
+
+
+		delay_ms(1000);
+//		for (int i = 0; i < 1000; i++) delay_us(1000);
+	};
 
 //	ArduCAM_Init(sensor_model);
 
@@ -377,7 +380,7 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 15;
+  htim1.Init.Prescaler = 16- 1;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim1.Init.Period = 65535;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
