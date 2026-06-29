@@ -209,11 +209,10 @@ int main(void)
 		}
 
 
-		delay_ms(1000);
-//		for (int i = 0; i < 1000; i++) delay_us(1000);
+		delay_ms(100);
 	};
 
-//	ArduCAM_Init(sensor_model);
+	ArduCAM_Init(sensor_model);
 
   /* USER CODE END 2 */
 
@@ -221,8 +220,22 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-//	OV2640_set_JPEG_size(OV2640_160x120);
-//
+	if (sensor_model == OV2640)
+	{
+		OV2640_set_JPEG_size(OV2640_160x120);
+		printf("ACK CMD switch to OV2640_160x120\r\n");
+	}
+	else if(sensor_model == OV5640)
+	{
+		OV5640_set_JPEG_size(OV5640_320x240);
+		printf("ACK CMD switch to OV5640_320x240\r\n");
+	}
+	else if(sensor_model == OV5642)
+	{
+		OV5642_set_JPEG_size(OV5642_320x240);
+		printf("ACK CMD switch to OV5642_320x240\r\n");
+	}
+
 //	SingleCapTransfer(image_buffer, BUFFER_SMALL);
 
 	HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);

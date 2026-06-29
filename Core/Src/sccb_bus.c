@@ -13,10 +13,10 @@
 
 
 
-//void SCCB_SIC_H() { HAL_GPIO_WritePin(GPIOA, SIO_C_Pin, GPIO_PIN_SET); } // SCL H
-//void SCCB_SIC_L() { HAL_GPIO_WritePin(GPIOA, SIO_C_Pin, GPIO_PIN_RESET); }	 	//SCL L
-//void SCCB_SID_H() { HAL_GPIO_WritePin(GPIOA, SIO_D_Pin, GPIO_PIN_SET); }   //SDA	H
-//void SCCB_SID_L() { HAL_GPIO_WritePin(GPIOA, SIO_D_Pin, GPIO_PIN_RESET); }  //SDA	L
+void SCCB_SIC_H() { HAL_GPIO_WritePin(GPIOA, SIO_C_Pin, GPIO_PIN_SET); } // SCL H
+void SCCB_SIC_L() { HAL_GPIO_WritePin(GPIOA, SIO_C_Pin, GPIO_PIN_RESET); }	 	//SCL L
+void SCCB_SID_H() { HAL_GPIO_WritePin(GPIOA, SIO_D_Pin, GPIO_PIN_SET); }   //SDA	H
+void SCCB_SID_L() { HAL_GPIO_WritePin(GPIOA, SIO_D_Pin, GPIO_PIN_RESET); }  //SDA	L
 
 
 //#define SCCB_SIC_H() { GPIOA->BSRR = SIO_C_Pin; } // SCL H
@@ -76,12 +76,12 @@ void sccb_bus_start(void)
 
     SCCB_SID_H();
     delay_us(I2C_TIM);
-//    SCCB_SIC_H();
-//    delay_us(I2C_TIM);
-//    SCCB_SID_L();
-//    delay_us(I2C_TIM);
-//    SCCB_SIC_L();
-//    delay_us(I2C_TIM);
+    SCCB_SIC_H();
+    delay_us(I2C_TIM);
+    SCCB_SID_L();
+    delay_us(I2C_TIM);
+    SCCB_SIC_L();
+    delay_us(I2C_TIM);
 }
 
 
