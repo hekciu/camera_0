@@ -99,6 +99,11 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef * hspi)
     // RX Done .. Do Something ...
 }
 
+void CAMERA_SPI_Polling_Rcv_CB(uint8_t byte, uint32_t n)
+{
+	image_buffer[n % BUFFER_SMALL] = byte;
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -237,6 +242,10 @@ int main(void)
 	}
 
 //	SingleCapTransfer(image_buffer, BUFFER_SMALL);
+
+	SingleCapTransferPolling(&CAMERA_SPI_Polling_Rcv_CB);
+
+	SSD1331_Draw_Whole_Image(&hspi1, image_buffer);
 
 	HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
 

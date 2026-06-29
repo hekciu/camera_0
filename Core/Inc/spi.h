@@ -18,5 +18,9 @@ uint8_t DMA_CAMERA_Init(void);
 void SPI_CAMERA_Init(void);
 uint8_t SPI_CAMERA_ReadWriteByte(uint8_t TxData);
 void SingleCapTransfer(uint8_t* out, uint32_t out_bfr_size);
+
+typedef void (*CameraByteReceivedCB)(uint8_t byte, uint32_t n);
+
+void SingleCapTransferPolling(CameraByteReceivedCB callback);
 void StartBMPcapture(void);
 #endif

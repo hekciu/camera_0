@@ -44,13 +44,6 @@ uint8_t SPI_CAMERA_ReadWriteByte(uint8_t TxData)
 	return out;
 }
 
-void DMA1_RX(uint8_t *p , uint32_t len)
-{
-	CS_LOW();
-	set_fifo_burst();
-
-	HAL_SPI_Receive_DMA(camera_spi, p, len);
-}
 //
 //void DMA1_SendtoUsart(uint8_t *p , uint32_t len)
 //{
@@ -59,6 +52,27 @@ void DMA1_RX(uint8_t *p , uint32_t len)
 //	USART_DMACmd(USART2, USART_DMAReq_Tx, ENABLE);
 //	DMA_Cmd(DMA1_Channel7, ENABLE);
 //}
+
+
+
+
+void SingleCapTransferPolling(CameraByteReceivedCB callback)
+{
+	flush_fifo();
+	clear_fifo_flag();
+	start_capture();
+	while(!get_bit(ARDUCHIP_TRIG , CAP_DONE_MASK)){;}
+	uint32_t length= read_fifo_length();
+
+	uint8_t byte = 0;
+
+	for (uint32_t n = 0; n < length; n++)
+	{
+		HAL_SPI_Receive(camera_spi, &byte, 1, 5000);
+
+		callback(byte, n);
+	}
+}
 
 
 void SingleCapTransfer(uint8_t* out, uint32_t out_bfr_size)
@@ -74,8 +88,13 @@ void SingleCapTransfer(uint8_t* out, uint32_t out_bfr_size)
 //	picbuf = Buf1;
 	haveRev = 0;
 
-	DMA1_RX(out, out_bfr_size);
+	CS_LOW();
+	set_fifo_burst();
+
+	HAL_SPI_Receive_DMA(camera_spi, out, out_bfr_size);
 }
+
+
 
 void StartBMPcapture(void)
 {
